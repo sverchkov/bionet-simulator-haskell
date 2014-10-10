@@ -16,6 +16,13 @@ data Edge = Edge { source :: Node
                  , edgeType :: EdgeType
                  } deriving (Show)
 
+type InteractionType = String
+
+data NetNode = NetNode { node :: Node
+                       , parents :: [Node]
+                       , interaction :: InteractionType
+                       } deriving (Show)
+
 -- Constructors from strings
 -- Take in cytoscape-like description of network, and get out list-of-edges description of network
 --------------------------------------------------------------------------------------------------
@@ -26,3 +33,8 @@ mkLOE = (map mkEdge).lines
 mkEdge :: String -> Edge
 mkEdge inStr = Edge { source = src, dest = dst, edgeType = et } where
     (et : src : dst :_) = words inStr
+
+-- hmm..
+mkNetNodes :: [Edge] -> [NetNode]
+mkNetNodes [] = []
+mkNetNodes (edge:rest) = []
