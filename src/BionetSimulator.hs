@@ -1,7 +1,6 @@
 module BionetSimulator where
 
 import qualified Data.List as List
-import qualified Data.List.Split as Split
 import qualified Data.Map.Strict as Map
 
 process = id
@@ -67,6 +66,10 @@ mixedInteractions net = map cleanup $ filter hasRight $ Map.assocs net where
     hasRight _ = False
 
     cleanup (node, Right l) = (l, node)
+
+prettyPrinter :: [([(InteractionType, Node)], Node)] -> String
+prettyPrinter theList = unlines $ map purdyPrint theList where
+    purdyPrint (list, node) = (unlines (map show list)) ++ "->" ++ (show node)
 
 -- Running a computation really consists of querying a values map from a network and an interaction spec.
 mkValues :: Net -> InteractionSpec -> Values
