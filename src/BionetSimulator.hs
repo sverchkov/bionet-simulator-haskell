@@ -23,6 +23,11 @@ type InteractionType = String
 -- Map of node to interaction type + parent set.
 type Net = Map.Map Node (Either (InteractionType, [Node]) [(InteractionType, Node)])
 
+-- Map of node to expression level
+type Value = Double
+type Values = Map.Map Node Value
+type InteractionSpec = InteractionType -> [Value] -> Value
+
 -- Constructors from strings
 -- Take in cytoscape-like description of network, and get out list-of-edges description of network
 --------------------------------------------------------------------------------------------------
@@ -62,3 +67,11 @@ mixedInteractions net = map cleanup $ filter hasRight $ Map.assocs net where
     hasRight _ = False
 
     cleanup (node, Right l) = (l, node)
+
+-- Running a computation really consists of querying a values map from a network and an interaction spec.
+mkValues :: Net -> InteractionSpec -> Values
+mkValues net intspec = values where
+    values = Map.map evaluator net
+    evaluator (Left (it, parents)) = intspec it (map (values Map.!) parents)
+    evaluator (Right list) = 0 --TODO: Make meaningful!
+
