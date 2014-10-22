@@ -21,7 +21,7 @@ data Edge = Edge { source :: Node
 type InteractionType = String
 
 -- Map of node to interaction type + parent set.
-type Net = Map.Map Node (Either InteractionType [InteractionType], [Node])
+type Net = Map.Map Node (Either (InteractionType, [Node]) [(InteractionType, Node)])
 
 -- Constructors from strings
 -- Take in cytoscape-like description of network, and get out list-of-edges description of network
@@ -39,23 +39,26 @@ mkNet :: [Edge] -> Net
 mkNet [] = Map.empty
 mkNet (edge:rest) = Map.unionWith parentMerge (netFromEdge edge) (mkNet rest) where
 
-    parentMerge (it1, parents1) (it2, parents2) = (typeMerge it1 it2, (List.union parents1 parents2))
+    parentMerge (Left ("", [])) x = x
+    parentMerge (Left (it1, parents1)) (Left (it2, parents2)) =
+        if it1 == it2 || it2 == "" then
+            -- I'm just concatenating parent lists. Don't know if I should union instread.
+            Left (it1, parents1++parents2) else
+            parentMerge (rightify (it1, parents1)) (rightify (it2, parents2))
+    parentMerge (Left x) (Right l) = parentMerge (rightify x) (Right l)
+    parentMerge y (Left x) = parentMerge (Left x) y
+    parentMerge (Right l1) (Right l2) = Right $ l1++l2
 
-    typeMerge (Left a) (Left b) =
-        if a == b || b == "" then Left a else
-            if a == "" then Left b else Right [a,b]
-    typeMerge (Left a) (Right l) = Right (a:l)
-    typeMerge (Right l) (Left a) = Right (a:l)
-    typeMerge (Right l1) (Right l2) = Right (l1++l2) 
+    rightify (it, parents) = Right $ zip (repeat it) parents
 
-    netFromEdge edge = Map.insert (dest edge) (Left (edgeType edge),[source edge]) tmpMap where
-        tmpMap = Map.singleton (source edge) (Left [],[])
+    netFromEdge edge = Map.insert (dest edge) (Left ((edgeType edge),[source edge])) tmpMap where
+        tmpMap = Map.singleton (source edge) (Left ([],[]))
 
 -- Utility to find mixed interactions
-mixedInteractions :: Net -> [([InteractionType], Node)]
+mixedInteractions :: Net -> [([(InteractionType, Node)], Node)]
 mixedInteractions net = map cleanup $ filter hasRight $ Map.assocs net where
 
-    hasRight (_, (Right _, _)) = True
+    hasRight (_, Right _) = True
     hasRight _ = False
 
-    cleanup (node, (Right l, parents)) = (l, node)
+    cleanup (node, Right l) = (l, node)
