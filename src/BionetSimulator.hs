@@ -28,9 +28,9 @@ type Values = Map.Map Node Value
 type InteractionSpec = InteractionType -> [Value] -> Value
 
 -- Constructors from strings
--- Take in cytoscape-like description of network, and get out list-of-edges description of network
 --------------------------------------------------------------------------------------------------
 
+-- Take in cytoscape-like description of network, and get out list-of-edges description of network
 mkLOE :: String -> [Edge]
 mkLOE = (map mkEdge) . lines
 
@@ -58,18 +58,29 @@ mkNet (edge:rest) = Map.unionWith parentMerge (netFromEdge edge) (mkNet rest) wh
     netFromEdge edge = Map.insert (dest edge) (Left ((edgeType edge),[source edge])) tmpMap where
         tmpMap = Map.singleton (source edge) (Left ([],[]))
 
--- Utility to find mixed interactions
-mixedInteractions :: Net -> [([(InteractionType, Node)], Node)]
-mixedInteractions net = map cleanup $ filter hasRight $ Map.assocs net where
+-- Turn integaction spec file into interaction spec
+readInteractionSpec :: String -> InteractionSpec
+readInteractionSpec _ = f where f _ = sum -- Stand-in. Need to fill in deets.
 
+-- Network inspection
+---------------------
+
+-- Utility to partition interactions into mixed and unmixed
+mixedInteractions :: Net -> ([(Node, Either (InteractionType, [Node]) [(InteractionType, Node)])], [(Node, Either (InteractionType, [Node]) [(InteractionType, Node)])])
+mixedInteractions net = List.partition hasRight $ Map.assocs net where
     hasRight (_, Right _) = True
     hasRight _ = False
 
-    cleanup (node, Right l) = (l, node)
-
-prettyPrinter :: [([(InteractionType, Node)], Node)] -> String
+prettyPrinter :: [(Node, Either (InteractionType, [Node]) [(InteractionType, Node)])] -> String
 prettyPrinter theList = unlines $ map purdyPrint theList where
-    purdyPrint (list, node) = (unlines (map show list)) ++ "->" ++ (show node)
+    purdyPrint (node, Right list) = (unlines (map show list)) ++ "->" ++ (show node)
+    purdyPrint (node, Left (it, list)) = (unlines (map show list)) ++ "->" ++ (show it) ++ " ->" ++ (show node)
+
+-- List all interaction types
+interactionTypes :: Net -> [InteractionType]
+interactionTypes net = foldl List.union [] $ map getIT $ Map.assocs net where
+    getIT (node, Right list) = map fst list
+    getIT (node, Left (it, _)) = [it]
 
 -- Running a computation really consists of querying a values map from a network and an interaction spec.
 mkValues :: Net -> InteractionSpec -> Values
