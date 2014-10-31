@@ -19,7 +19,7 @@ type EdgeType = String
 data Polarity = Activating | Inhibiting deriving (Eq, Show, Read)
 
 -- Probably makes sense to couple polarity in the interaction type
-type InteractionType = (EdgeType, Polarity)
+type InteractionType = (EdgeType, Maybe Polarity)
 
 -- A net is a map of node to a list of interaction type - parent pairs
 type Net = Map.Map Node [(InteractionType, Node)]
@@ -63,5 +63,6 @@ scaledExpit list = 2/(1+exp(-sum list)) - 1
 
 -- Interaction spec = polarity (as +/- 1) times 4
 polarityInteractionSpec :: InteractionSpec
-polarityInteractionSpec (_, Activating) = (4*)
-polarityInteractionSpec (_, Inhibiting) = ((-4)*)
+polarityInteractionSpec (_, Just Activating) = (4*)
+polarityInteractionSpec (_, Just Inhibiting) = ((-4)*)
+polarityInteractionSpec (_, Nothing) = 0
