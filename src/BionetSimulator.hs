@@ -30,6 +30,19 @@ type Values = Map.Map Node Value
 type InteractionSpec = InteractionType -> Value -> Value
 type LinkFn = [Value] -> Value
 
+-- Network building
+-------------------
+
+-- Empty net
+empty :: Net
+empty = Map.empty
+
+-- Add an edge
+(++) :: Net -> (Node, InteractionType, Node) -> Net
+original ++ (src,it,dest) = if dest `Map.member` original
+    then Map.insert dest ((it,src):original Map.! dest) original
+    else Map.insert dest [(it,src)] original
+
 -- Network inspection
 ---------------------
 
@@ -65,4 +78,4 @@ scaledExpit list = 2/(1+exp(-sum list)) - 1
 polarityInteractionSpec :: InteractionSpec
 polarityInteractionSpec (_, Just Activating) = (4*)
 polarityInteractionSpec (_, Just Inhibiting) = ((-4)*)
-polarityInteractionSpec (_, Nothing) = 0
+polarityInteractionSpec (_, Nothing) = \_->0
