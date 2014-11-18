@@ -3,8 +3,6 @@ module BionetSimulator where
 import qualified Data.List as List
 import qualified Data.Map.Strict as Map
 
-process = id
-
 -- Types and Data
 -----------------
 
