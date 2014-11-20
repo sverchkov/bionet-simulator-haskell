@@ -26,7 +26,8 @@ type Net = Map.Map Node [(InteractionType, Node)]
 type Value = Double
 type Values = Map.Map Node Value
 type InteractionSpec = InteractionType -> Value -> Value
-type LinkFn = [Value] -> Value
+-- Local computation = child -> [parent, parent value, interaction] -> child value
+type LocalComputation = Node -> [(Node, Value, InteractionType)] -> Value
 
 -- Network building
 -------------------
@@ -36,13 +37,27 @@ empty :: Net
 empty = Map.empty
 
 -- Add an edge
-(++) :: Net -> (Node, InteractionType, Node) -> Net
-original ++ (src,it,dest) = if dest `Map.member` original
+(+-) :: Net -> (Node, InteractionType, Node) -> Net
+original +- (src,it,dest) = if dest `Map.member` original
     then Map.insert dest ((it,src):original Map.! dest) original
     else Map.insert dest [(it,src)] original
 
+-- Add a node
+(+.) :: Net -> Node -> Net
+original +. node = if node `Map.member` original
+    then original
+    else Map.insert node [] original
+
 -- Network inspection
 ---------------------
+
+-- List Nodes
+nodes :: Net -> [Node]
+nodes = Map.keys
+
+-- Get incoming arcs for node
+getArcs :: Net -> Node -> [(InteractionType, Node)]
+getArcs = (Map.!)
 
 -- List all interaction types
 edgeTypes :: Net -> [EdgeType]
@@ -53,27 +68,12 @@ edgeTypes net = foldl List.union [] $ map cleanup $ Map.assocs net where
 --------------------------------
 
 -- Running a computation really consists of querying a values map from a network and an interaction spec.
-computeValues :: Net -> Map.Map Node Value -> LinkFn -> InteractionSpec -> Values
-computeValues net fixed link intspec = values where
+compute :: Net -> LocalComputation -> Values
+compute net computation = values where
 
-    values = Map.mapWithKey evaluatorOuter net
+    values = Map.mapWithKey comp net
 
-    evaluatorOuter node list = if Map.member node fixed
-        then fixed Map.! node
-        else link $ map (evaluator node) list
+    comp node arcs = computation node (map addValue arcs)
 
-    evaluator :: Node -> (InteractionType, Node) -> Value
-    evaluator node (interaction, parent) = intspec interaction (values Map.! parent) -- Ignores the node, for now :/
+    addValue (interaction, parent) = (parent, values Map.! parent, interaction)
 
--- The dummiest defaults
-------------------------
-
--- Link function = 2 expit - 1
-scaledExpit :: LinkFn 
-scaledExpit list = 2/(1+exp(-sum list)) - 1
-
--- Interaction spec = polarity (as +/- 1) times 4
-polarityInteractionSpec :: InteractionSpec
-polarityInteractionSpec (_, Just Activating) = (4*)
-polarityInteractionSpec (_, Just Inhibiting) = ((-4)*)
-polarityInteractionSpec (_, Nothing) = \_->0
