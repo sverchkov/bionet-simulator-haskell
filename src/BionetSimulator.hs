@@ -76,3 +76,7 @@ compute net computation = values where
 
     addValue (interaction, parent) = (parent, values Map.! parent, interaction)
 
+-- Explicit manipulation
+force :: LocalComputation -> Node -> Value -> LocalComputation
+force computation node value node _ = value
+force computation _ _ = computation
