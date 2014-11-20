@@ -38,9 +38,8 @@ empty = Map.empty
 
 -- Add an edge
 (+-) :: Net -> (Node, InteractionType, Node) -> Net
-original +- (src,it,dest) = if dest `Map.member` original
-    then Map.insert dest ((it,src):original Map.! dest) original
-    else Map.insert dest [(it,src)] original
+original +- (src,it,dest) = Map.insert dest ((it,src):net Map.! dest) net where
+    net = original +. src +. dest
 
 -- Add a node
 (+.) :: Net -> Node -> Net
